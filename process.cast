@@ -1,0 +1,9 @@
+{"version": 2, "width": 110, "height": 35, "timestamp": 1793289624, "env": {"SHELL": "/bin/bash", "TERM": "xterm-256color"}}
+[0.021893, "o", "$ ssh -p 22222 -i /run/practicum/id -o UserKnownHostsFile=/run/practicum/known_hosts nanao@127.0.0.1 'cd ~/practicum-lab; nohup bash alive.sh >stdout.log 2>stderr.log < /dev/null & echo $! > alive.pid'\r\n"]
+[0.361462, "o", "$ sleep 3\r\n"]
+[3.369977, "o", "$ ssh -p 22222 -i /run/practicum/id -o UserKnownHostsFile=/run/practicum/known_hosts nanao@127.0.0.1 'cd ~/practicum-lab; ps -p \"$(cat alive.pid)\" -o pid,ppid,stat,etime,args; timeout 3 tail -f stdout.log stderr.log; true'\r\n"]
+[3.726464, "o", "    PID    PPID STAT     ELAPSED COMMAND\r\n   1890    1847 S          00:03 bash alive.sh\r\n"]
+[3.734652, "o", "==> stdout.log <==\r\nI am still alive\r\nI am still alive\r\nI am still alive\r\nI am still alive\r\n\r\n==> stderr.log <==\r\n"]
+[4.380371, "o", "\r\n==> stdout.log <==\r\nI am still alive\r\n"]
+[5.383097, "o", "I am still alive\r\n"]
+[6.386536, "o", "I am still alive\r\n"]
