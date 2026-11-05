@@ -1,35 +1,41 @@
 # Долгоиграющий процесс
 
-Запуск на сервере:
+На Ubuntu установил `gdb`. Сначала запустил скрипт как обычную команду:
 
 ```bash
 chmod +x alive.sh
-nohup ./alive.sh >stdout.log 2>stderr.log < /dev/null &
-echo $! > alive.pid
+shopt -s huponexit
+./alive.sh
+```
+
+Нажал Ctrl+Z и продолжил тот же процесс в фоне:
+
+```bash
+bg
+pid=$(jobs -p %+)
+echo "$pid" > alive.pid
+disown -h "$pid"
+ls -l /proc/"$pid"/fd/{0,1,2}
+sudo gdb -q -nx -batch -p "$pid" -x redirect.gdb
+ls -l /proc/"$pid"/fd/{0,1,2}
 exit
 ```
 
-При закрытии SSH-сессии оболочка может получить SIGHUP и передать его
-своим заданиям. `nohup` устанавливает игнорирование SIGHUP, которое
-наследует скрипт. `&` запускает его в фоне, а перенаправления отсоединяют
-его от терминала. Вход берётся из `/dev/null`.
+`disown -h` говорит Bash не пересылать этому заданию `SIGHUP` при
+закрытии сессии. GDB подключается к уже запущенному процессу. Команды
+в `redirect.gdb` открывают файлы в его рабочем каталоге и через `dup2`
+заменяют дескрипторы 1 и 2. Дескриптор 0 теперь указывает на `/dev/null`.
+В конце GDB отсоединяется, PID остаётся прежним.
 
 После повторного входа:
 
 ```bash
-ps -p "$(cat alive.pid)" -o pid,ppid,stat,etime,args
+pid=$(cat alive.pid)
+ps -p "$pid" -o pid,ppid,stat,etime,args
 tail -f stdout.log stderr.log
 ```
 
-`tail -f` показывает новые строки без остановки процесса. Пустой
-`stderr.log` означает, что скрипт ничего не записал в stderr.
-Ctrl+C завершает `tail`, а скрипт продолжает работать.
-
-После проверки:
-
-```bash
-kill "$(cat alive.pid)"
-```
-
-Переподключение и проверка записаны в `process.cast`.
-Вывод процесса сохранён в `stdout.log` и `stderr.log`.
+В `process.cast` видны запуск и смена дескрипторов, в `reconnect.cast` —
+тот же PID и новые строки в логе после повторного входа. `stderr.log`
+пустой, потому что скрипт ничего не пишет в stderr. Ctrl+C останавливает
+только `tail`. По окончании проверки процесс можно остановить `kill "$pid"`.
